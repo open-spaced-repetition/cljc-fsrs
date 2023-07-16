@@ -32,22 +32,15 @@
              0.5, ;; Hard Penalty
              2    ;; Easy Bonus
              ]
-   :request-retention 0.9 ; Retention is the percentage of your
-                          ; successful recall. `request-retention` is
-                          ; a number between 0 and 1 which defines the
-                          ; retention percentage we are targeting.
-   :maximum-interval  36500 ; The interval of time before re-reviewing the card.
+   :request-retention 0.9 ;; Retention is the percentage of your
+                          ;; successful recall. `request-retention` is
+                          ;; a number between 0 and 1 which defines
+                          ;; the retention percentage we are
+                          ;; targeting.
+   :maximum-interval  36500 ;; The interval of time before
+                            ;; re-reviewing the card, in days
    :interval-modifier (calculate-interval-modifier 0.9)
    })
-;;; @TODO: Why are the weights different in the code[1], README[2] and
-;;; paper[3]?
-;; [1]: https://github.com/open-spaced-repetition/fsrs4anki/blob/main/fsrs4anki_scheduler.js#L11
-;; [2]: https://github.com/open-spaced-repetition/fsrs4anki#22-deck-parameter-settings
-;; [3]: https://github.com/open-spaced-repetition/fsrs4anki/wiki/Free-Spaced-Repetition-Scheduler#default-parameters
-
-;;; @TODO: Why must interval be less than 1 day?
-;; The FSRS Paper says that this should be less than 1 day, but the
-;; code reads like this is a value in days. Which is it?
 
 ;;; # Card Ratings and States
 ;; There are four possible ratings that we assign to a card on every
@@ -97,7 +90,7 @@
   [difficulty]
   (-> difficulty (max 1) (min 10)))
 
-(defn mean-reversion
+(defn mean-reversion "Ensure that we do not get stuck in easy hell"
   [current-difficulty weights]
   (+ (* (nth weights 7) (nth weights 4))
      (* (- 1 (nth weights 7)) current-difficulty)))
@@ -122,19 +115,19 @@
     ;; @TODO: Apply Fuzzying to the `new-interval`
     (min maximum-interval (max 1 (Math/round new-interval)))))
 
-(defn next-difficulty
+(defn next-difficulty "Given `difficulty` and `rating`, calculate the new diff"
   [difficulty rating weights]
   (let [new-diff (- difficulty
                     (* (nth weights 6)
                        (- (nth weights (->rating rating)) 3)))]
     (constrain-difficulty (mean-reversion new-diff weights))))
 
-(defn calculate-retrievability
+(defn calculate-retrievability "Calculate decay in recall over time"
   [elapsed-days stability]
   (Math/pow (+ 1 (/ elapsed-days (* stability 9)))
             -1))
 
-(defn next-stability
+(defn next-stability "Given current D, S, R and rating, find the new stability"
   [difficulty stability retrievability rating weights]
   (let [recall-factor (* (Math/exp (nth weights 8))
                          (- 11 difficulty)
@@ -173,7 +166,7 @@
      :reps 0
      :lapses 0
      :state :new
-     :last-review-inst now}))
+     :last-review now}))
 
 ;; The Schedule for a card is the internal representation of the card.
 ;; We build it every time we surface a card for review, and calculate
@@ -182,8 +175,8 @@
 ;; all the information we need to store.
 
 (defn empty-schedule
-  "Given a `card`, return a new `schedule` that we can use for review
-  predictions."
+  "Given a `card`, return a new `schedule` that we can fill out for
+  review predictions."
   [card]
   (reduce (fn [schedule rating] (assoc schedule rating card))
           {}
@@ -197,9 +190,9 @@
 ;; 2. :stability  (dependent on initial `weights`)
 ;; 3. :due (dependent on `easy-bonus` for `:easy` rating)
 (defn update-schedule-difficulty-stability
-  "Given a `schedule` and the associated `card`, set the values of the
-  `:difficulty` and `:stability` metrics for any review that the card
-  gets."
+  "Given a `schedule` and the associated `card`, find the new values of
+  the `:difficulty` and `:stability` metrics for any review that the
+  card gets."
   [schedule {:keys [elapsed-days difficulty stability] :as card} {:keys [weights]}]
   (case (:state card)
     ;; :new state means that we have to initialize the schedule with
@@ -246,7 +239,7 @@
                                     :easy weights))))))
 
 (defn update-schedule-state
-  "Update the state field in the `schedule` of the `card` by
+  "Update the `:state` field in the `schedule` of the `card` by
   transitioning it through our state machine for every possible rating."
   [schedule card]
   (case (:state card)
@@ -293,9 +286,8 @@
   "Update the `:due` and `:scheduled-days` fields in the `schedule` of
   the `card` by transitioning it through our state machine for every
   possible rating."
-  [schedule card params]
-  (let [now (Instant/now)
-        good-interval (next-interval params
+  [schedule card now params]
+  (let [good-interval (next-interval params
                                      (get-in schedule [:good :stability]))
         hard-interval (min (next-interval params
                                           (get-in schedule [:hard :stability]))
@@ -311,8 +303,10 @@
           (assoc-in [:hard  :due] (.plus now 5 ChronoUnit/MINUTES))
           (assoc-in [:good  :due] (.plus now good-interval ChronoUnit/DAYS))
           (assoc-in [:easy  :due] (.plus now easy-interval ChronoUnit/DAYS))
-          (assoc-in [:good :scheduled-days] good-interval)
-          (assoc-in [:easy :scheduled-days] easy-interval))
+          (assoc-in [:again :scheduled-days] 0) ; Since due is in minutes
+          (assoc-in [:hard  :scheduled-days] 0) ; Since due is in minutes
+          (assoc-in [:good  :scheduled-days] good-interval)
+          (assoc-in [:easy  :scheduled-days] easy-interval))
 
       (:learning :relearning)
       (-> schedule
@@ -320,8 +314,10 @@
           (assoc-in [:hard  :due] (.plus now 10 ChronoUnit/MINUTES))
           (assoc-in [:good  :due] (.plus now good-interval ChronoUnit/DAYS))
           (assoc-in [:easy  :due] (.plus now easy-interval ChronoUnit/DAYS))
-          (assoc-in [:good :scheduled-days] good-interval)
-          (assoc-in [:easy :scheduled-days] easy-interval))
+          (assoc-in [:again :scheduled-days] 0) ; Since due is in minutes
+          (assoc-in [:hard  :scheduled-days] 0) ; Since due is in minutes
+          (assoc-in [:good  :scheduled-days] good-interval)
+          (assoc-in [:easy  :scheduled-days] easy-interval))
 
       :review
       (-> schedule
@@ -329,25 +325,26 @@
           (assoc-in [:hard  :due] (.plus now hard-interval ChronoUnit/DAYS))
           (assoc-in [:good  :due] (.plus now good-interval ChronoUnit/DAYS))
           (assoc-in [:easy  :due] (.plus now easy-interval ChronoUnit/DAYS))
-          (assoc-in [:hard :scheduled-days] hard-interval)
-          (assoc-in [:good :scheduled-days] good-interval)
-          (assoc-in [:easy :scheduled-days] easy-interval)))))
+          (assoc-in [:again :scheduled-days] 0) ; Since due is in minutes
+          (assoc-in [:hard  :scheduled-days] hard-interval)
+          (assoc-in [:good  :scheduled-days] good-interval)
+          (assoc-in [:easy  :scheduled-days] easy-interval)))))
 
 (defn make-schedule
-  "Given a `card`, make a schedule for the card which can be used to
+  "Given a `card`, make a `schedule` for the card which can be used to
   predict the next transition."
-  [card params]
+  [card review-time-instant params]
   (-> (empty-schedule card)
       (update-schedule-difficulty-stability card params)
       (update-schedule-state card)
       update-schedule-lapses
-      (update-schedule-due-scheduled-days card params)))
+      (update-schedule-due-scheduled-days card review-time-instant params)))
 
 (defn update-elapsed-days
   [card review-time-instant]
-  (->> (LocalDate/ofInstant (:last-review-inst card) (ZoneId/of "UTC"))
+  (->> (LocalDate/ofInstant review-time-instant (ZoneId/of "UTC"))
        (Period/between
-        (LocalDate/ofInstant review-time-instant (ZoneId/of "UTC")))
+        (LocalDate/ofInstant (:last-review card) (ZoneId/of "UTC")))
        .getDays
        (assoc card :elapsed-days)))
 
@@ -358,12 +355,33 @@
 ;; upfront, but its done because it simplifies state management (I
 ;; think)
 (defn review-card!
-  "We are surfacing `card` for review. Precalculate future state of the
-  `card` for all possible `ratings` and return this data as well."
-  [card params]
-  (let [now (Instant/now)]
-    (-> card
-        (update-elapsed-days now)
-        (assoc :last-review-inst now)
-        (update :reps inc)
-        (make-schedule params))))
+  "We have repeated the `card` according to previous instructions. We
+  have a new `rating` for the card. Generate the new state of the card
+  after the rating."
+  ([card rating]
+   (review-card! card rating default-params))
+  ([card rating params]
+   (assert-rating rating)
+   (assert-weights (:weights params))
+   (review-card! card rating (Instant/now) params))
+  ;; This arity should be considered private. It's helpful to be able
+  ;; to control time during tests.
+  ([card rating review-time-instant params]
+   (-> card
+       (update-elapsed-days review-time-instant)
+       (assoc :last-review review-time-instant)
+       (update :reps inc)
+       (make-schedule review-time-instant params)
+       rating)))
+
+;;; @TODO: What is the point of this log? It does not capture anything
+;;; that the card can't tell better, other than the actual rating.
+(defn record-log
+  "Create a log of the `review-card!` activity. This should be shared
+  back with `open-spaced-repetition` for improving the algorithm."
+  [card rating]
+  {:rating rating
+   :scheduled-days (:scheduled-days card)
+   :elapsed-days (:elapsed-days card)
+   :review (:last-review card)
+   :state (:state card)})
