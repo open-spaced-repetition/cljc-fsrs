@@ -1,7 +1,9 @@
 {:paths ["src" "resources"]
- :deps {org.clojure/clojure {:mvn/version "1.11.1"}}
+ :deps {tick/tick {:mvn/version "0.6.2"}}
  :aliases
- {:test
+ {:dev
+  {:extra-deps {org.clojure/clojure {:mvn/version "1.11.1"}}}
+  :test
   {:extra-paths ["test"]
    :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
                 io.github.cognitect-labs/test-runner

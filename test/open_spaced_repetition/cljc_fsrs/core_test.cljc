@@ -1,5 +1,5 @@
-(ns open-spaced-repetition.clj-fsrs.core-test
-  (:require [open-spaced-repetition.clj-fsrs.core :as core]
+(ns open-spaced-repetition.cljc-fsrs.core-test
+  (:require [open-spaced-repetition.cljc-fsrs.core :as core]
             [clojure.test :as t]))
 
 (t/deftest new-card!
@@ -56,3 +56,29 @@
             :state :learning
             :scheduled-days 0})
         "Card value transition based on a First review :again rating"))
+
+(t/deftest review-card!-manual-time-stamps
+  (let [card {:lapses 0,
+              :stability 0,
+              :difficulty 0,
+              :reps 0,
+              :state :new,
+              :due #time/instant "2023-07-15T14:42:14.706482Z",
+              :elapsed-days 0,
+              :scheduled-days 0,
+              :last-review #time/instant "2023-07-15T14:42:14.706482Z"}]
+    (t/is (-> card
+              (core/review-card! :hard  #time/instant "2023-07-15T14:42:14.706482Z" core/default-params)
+              (core/review-card! :again #time/instant "2023-07-18T14:42:14.706482Z" core/default-params)
+              (core/review-card! :good  #time/instant "2023-07-18T14:47:14.706482Z" core/default-params)
+              (core/review-card! :good  #time/instant "2023-07-21T14:47:14.706482Z" core/default-params)
+              (core/review-card! :easy  #time/instant "2023-07-28T14:47:14.706482Z" core/default-params)
+              (= {:lapses 1,
+                  :stability 24.75017663164144,
+                  :difficulty 4.92,
+                  :reps 5,
+                  :state :review,
+                  :due #time/instant "2023-08-22T14:47:14.706482Z",
+                  :elapsed-days 7,
+                  :scheduled-days 25,
+                  :last-review #time/instant "2023-07-28T14:47:14.706482Z"})))))

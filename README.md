@@ -1,9 +1,9 @@
-# com.github.open-spaced-repetition/clj-fsrs
+# com.github.open-spaced-repetition/cljc-fsrs
 <p align="center">
-  <a href="https://github.com/open-spaced-repetition/clj-fsrs/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-informational" alt="License"></a>
+  <a href="https://github.com/open-spaced-repetition/cljc-fsrs/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-informational" alt="License"></a>
 </p>
 
-A Clojure implementation of [Free Spaced Repetition Scheduler algorithm](https://github.com/open-spaced-repetition/free-spaced-repetition-scheduler)
+A Clojure(script) implementation of [Free Spaced Repetition Scheduler algorithm](https://github.com/open-spaced-repetition/free-spaced-repetition-scheduler)
 
 ## Table of Contents
 
@@ -23,27 +23,28 @@ There is a lot of scope to make this more Clojure-y, which I will do as and when
 
 ### Deps.edn
 ```edn
-io.github.vedang/clj-fsrs {:git/sha "<PUT-LATEST-SHA-HERE>"}
+io.github.vedang/cljc-fsrs {:git/sha "<PUT-LATEST-SHA-HERE>"}
 ```
 
 ## 🚀 Usage
 
 ```clojure
-(require '[open-spaced-repetition.clj-fsrs.core :as core])
+(require '[open-spaced-repetition.cljc-fsrs.core :as core]
+         '[tick.core :as t])
 
 (def card (core/new-card!))
-;;; =>
-;; {:last-review
-;;  #object[java.time.Instant 0x33433635 "2023-07-15T14:42:14.706482Z"],
-;;  :lapses 0,
-;;  :stability 0,
-;;  :difficulty 0,
-;;  :reps 0,
-;;  :state :new,
-;;  :due
-;;  #object[java.time.Instant 0x33433635 "2023-07-15T14:42:14.706482Z"],
-;;  :elapsed-days 0,
-;;  :scheduled-days 0}
+;; =>
+{:last-review
+ #time/instant "2023-07-15T14:42:14.706482Z",
+ :lapses 0,
+ :stability 0,
+ :difficulty 0,
+ :reps 0,
+ :state :new,
+ :due
+ #time/instant "2023-07-15T14:42:14.706482Z",
+ :elapsed-days 0,
+ :scheduled-days 0}
 ```
 
 We reviewed the card immediately after creating it, as suggested in the response `:due`. Our recall rating was `:good`.
@@ -52,52 +53,67 @@ We reviewed the card immediately after creating it, as suggested in the response
 (-> card
     (core/review-card! :good))
 
-;;; =>
-;; {:last-review
-;;  #object[java.time.Instant 0x53f66932 "2023-07-15T14:45:26.271152Z"],
-;;  :lapses 0,
-;;  :stability 3,
-;;  :difficulty 5.0,
-;;  :reps 1,
-;;  :state :learning,
-;;  :due
-;;  #object[java.time.Instant 0x1fa27e00 "2023-07-18T14:45:26.274199Z"],
-;;  :elapsed-days 0,
-;;  :scheduled-days 3}
+;; =>
+{:last-review
+ #time/instant "2023-07-15T14:45:26.271152Z",
+ :lapses 0,
+ :stability 3,
+ :difficulty 5.0,
+ :reps 1,
+ :state :learning,
+ :due
+ #time/instant "2023-07-18T14:45:26.274199Z",
+ :elapsed-days 0,
+ :scheduled-days 3}
 ```
 
 You can see how the `:difficulty`, `:stability` are given initial values based on your rating. The `:state` of the card is now `:learning`. We have also been told to review it again after 3 days.
 
 We waited three days and reviewed it again. This time we forgot the card and our rating was `:again`
 ```clojure
-(import
- '(java.time Instant)
- '(java.time.temporal ChronoUnit))
-
 (-> card
     (core/review-card! :good)
     ;; This arity should be considered private. It's helpful to be
     ;; able to control time during tests, but real usage should use
     ;; the version above, not the one below
-    (core/review-card! :again (.plus (Instant/now) 3 ChronoUnit/DAYS) core/default-params))
+    (core/review-card! :again (t/>> (t/now) (t/new-period 3 :days)) core/default-params))
 
 ;; =>
-;; {:lapses 1,
-;;  :stability 3,
-;;  :difficulty 5.0,
-;;  :reps 2,
-;;  :state :learning,
-;;  :due
-;;  #object[java.time.Instant 0x11ed2b5 "2023-07-18T17:51:22.976950Z"],
-;;  :elapsed-days 3,
-;;  :scheduled-days 0,
-;;  :last-review
-;;  #object[java.time.Instant 0x6fea1722 "2023-07-18T17:46:22.976950Z"]}
+{:lapses 1,
+ :stability 3,
+ :difficulty 5.0,
+ :reps 2,
+ :state :learning,
+ :due
+ #time/instant "2023-07-18T17:51:22.976950Z",
+ :elapsed-days 3,
+ :scheduled-days 0,
+ :last-review
+ #time/instant "2023-07-18T17:46:22.976950Z"}
 ```
 
-Until we move into `:review` state, the `:stability` and `:difficulty` settings are not affected. Let's re-review the card and this time rate it as `:good`
+Until we move into `:review` state, the `:stability` and `:difficulty` settings are not affected. Since we forgot the card (hence `:again` rating), we can see this reflected in `:lapses` and the fact that we've been asked to repeat the card in 5 minutes. Let's re-review the card and this time rate it as `:good`
 
-## ⚙️ Contributing
+```clojure
+(-> card
+    (core/review-card! :good  #time/instant "2023-07-15T14:42:14.706482Z" core/default-params)
+    (core/review-card! :again #time/instant "2023-07-18T14:42:14.706482Z" core/default-params)
+    (core/review-card! :good  #time/instant "2023-07-18T14:47:14.706482Z" core/default-params))
+;; =>
+{:lapses 1,
+ :stability 3,
+ :difficulty 5.0,
+ :reps 3,
+ :state :review,
+ :due #time/instant "2023-07-22T14:47:14.706482Z",
+ :elapsed-days 0,
+ :scheduled-days 4,
+ :last-review #time/instant "2023-07-18T14:47:14.706482Z"}
+```
+
+We are now in `:review` state and will start tracking the stability and difficulty of the item!
+
+## ⚙️ Contributing (This Section TBD)
 ### 🛠 Code Development
 
 Run the project's tests:
@@ -121,7 +137,7 @@ variables (requires the `ci` task be run first):
 
     $ clojure -T:build deploy
 
-Your library will be deployed to com.github.open-spaced-repetition/clj-fsrs on clojars.org by default.
+Your library will be deployed to com.github.open-spaced-repetition/cljc-fsrs on clojars.org by default.
 
 ## License
 

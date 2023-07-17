@@ -1,8 +1,6 @@
-(ns open-spaced-repetition.clj-fsrs.core
+(ns open-spaced-repetition.cljc-fsrs.core
   #:nextjournal.clerk{:visibility {:code :show, :result :show}, :toc true}
-  (:import
-   (java.time Instant LocalDate Period ZoneId)
-   (java.time.temporal ChronoUnit)))
+  (:require [tick.core :as t]))
 
 ;;; # Default Parameters
 (defn calculate-interval-modifier
@@ -157,7 +155,7 @@
 ;;; # Data-structures for card scheduling
 (defn new-card! "Return a brand new empty card, with empty values"
   []
-  (let [now (Instant/now)]
+  (let [now (t/now)]
     {:due now
      :stability 0
      :difficulty 0
@@ -299,10 +297,10 @@
     (case (:state card)
       :new
       (-> schedule
-          (assoc-in [:again :due] (.plus now 1 ChronoUnit/MINUTES))
-          (assoc-in [:hard  :due] (.plus now 5 ChronoUnit/MINUTES))
-          (assoc-in [:good  :due] (.plus now good-interval ChronoUnit/DAYS))
-          (assoc-in [:easy  :due] (.plus now easy-interval ChronoUnit/DAYS))
+          (assoc-in [:again :due] (t/>> now (t/new-duration 1 :minutes)))
+          (assoc-in [:hard  :due] (t/>> now (t/new-duration 5 :minutes)))
+          (assoc-in [:good  :due] (t/>> now (t/new-period good-interval :days)))
+          (assoc-in [:easy  :due] (t/>> now (t/new-period easy-interval :days)))
           (assoc-in [:again :scheduled-days] 0) ; Since due is in minutes
           (assoc-in [:hard  :scheduled-days] 0) ; Since due is in minutes
           (assoc-in [:good  :scheduled-days] good-interval)
@@ -310,10 +308,10 @@
 
       (:learning :relearning)
       (-> schedule
-          (assoc-in [:again :due] (.plus now 5 ChronoUnit/MINUTES))
-          (assoc-in [:hard  :due] (.plus now 10 ChronoUnit/MINUTES))
-          (assoc-in [:good  :due] (.plus now good-interval ChronoUnit/DAYS))
-          (assoc-in [:easy  :due] (.plus now easy-interval ChronoUnit/DAYS))
+          (assoc-in [:again :due] (t/>> now (t/new-duration 5  :minutes)))
+          (assoc-in [:hard  :due] (t/>> now (t/new-duration 10 :minutes)))
+          (assoc-in [:good  :due] (t/>> now (t/new-period good-interval :days)))
+          (assoc-in [:easy  :due] (t/>> now (t/new-period easy-interval :days)))
           (assoc-in [:again :scheduled-days] 0) ; Since due is in minutes
           (assoc-in [:hard  :scheduled-days] 0) ; Since due is in minutes
           (assoc-in [:good  :scheduled-days] good-interval)
@@ -321,10 +319,10 @@
 
       :review
       (-> schedule
-          (assoc-in [:again :due] (.plus now 5 ChronoUnit/MINUTES))
-          (assoc-in [:hard  :due] (.plus now hard-interval ChronoUnit/DAYS))
-          (assoc-in [:good  :due] (.plus now good-interval ChronoUnit/DAYS))
-          (assoc-in [:easy  :due] (.plus now easy-interval ChronoUnit/DAYS))
+          (assoc-in [:again :due] (t/>> now (t/new-duration 5 :minutes)))
+          (assoc-in [:hard  :due] (t/>> now (t/new-period hard-interval :days)))
+          (assoc-in [:good  :due] (t/>> now (t/new-period good-interval :days)))
+          (assoc-in [:easy  :due] (t/>> now (t/new-period easy-interval :days)))
           (assoc-in [:again :scheduled-days] 0) ; Since due is in minutes
           (assoc-in [:hard  :scheduled-days] hard-interval)
           (assoc-in [:good  :scheduled-days] good-interval)
@@ -342,10 +340,9 @@
 
 (defn update-elapsed-days
   [card review-time-instant]
-  (->> (LocalDate/ofInstant review-time-instant (ZoneId/of "UTC"))
-       (Period/between
-        (LocalDate/ofInstant (:last-review card) (ZoneId/of "UTC")))
-       .getDays
+  (->> review-time-instant
+       (t/between (:last-review card))
+       t/days
        (assoc card :elapsed-days)))
 
 ;; We are surfacing a card for review! Update the internal state of
@@ -363,7 +360,7 @@
   ([card rating params]
    (assert-rating rating)
    (assert-weights (:weights params))
-   (review-card! card rating (Instant/now) params))
+   (review-card! card rating (t/now) params))
   ;; This arity should be considered private. It's helpful to be able
   ;; to control time during tests.
   ([card rating review-time-instant params]
