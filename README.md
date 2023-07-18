@@ -34,7 +34,7 @@ io.github.vedang/cljc-fsrs {:git/sha "<PUT-LATEST-SHA-HERE>"}
 
 (def card (core/new-card!))
 ;; =>
-{:last-review
+{:last-repeat
  #time/instant "2023-07-15T14:42:14.706482Z",
  :lapses 0,
  :stability 0,
@@ -47,14 +47,14 @@ io.github.vedang/cljc-fsrs {:git/sha "<PUT-LATEST-SHA-HERE>"}
  :scheduled-days 0}
 ```
 
-We reviewed the card immediately after creating it, as suggested in the response `:due`. Our recall rating was `:good`.
+We studied the card immediately as part of creating it, as suggested in the response `:due`. Our recall rating was `:good`.
 
 ```clojure
 (-> card
-    (core/review-card! :good))
+    (core/repeat-card! :good))
 
 ;; =>
-{:last-review
+{:last-repeat
  #time/instant "2023-07-15T14:45:26.271152Z",
  :lapses 0,
  :stability 3,
@@ -67,16 +67,16 @@ We reviewed the card immediately after creating it, as suggested in the response
  :scheduled-days 3}
 ```
 
-You can see how the `:difficulty`, `:stability` are given initial values based on your rating. The `:state` of the card is now `:learning`. We have also been told to review it again after 3 days.
+You can see how the `:difficulty`, `:stability` are given initial values based on your rating. The `:state` of the card is now `:learning`. We have also been told to repeat the card after 3 days.
 
-We waited three days and reviewed it again. This time we forgot the card and our rating was `:again`
+We waited three days and studied the card again. This time we forgot the card and our rating was `:again`
 ```clojure
 (-> card
-    (core/review-card! :good)
+    (core/repeat-card! :good)
     ;; This arity should be considered private. It's helpful to be
     ;; able to control time during tests, but real usage should use
     ;; the version above, not the one below
-    (core/review-card! :again (t/>> (t/now) (t/new-period 3 :days)) core/default-params))
+    (core/repeat-card! :again (t/>> (t/now) (t/new-period 3 :days)) core/default-params))
 
 ;; =>
 {:lapses 1,
@@ -88,7 +88,7 @@ We waited three days and reviewed it again. This time we forgot the card and our
  #time/instant "2023-07-18T17:51:22.976950Z",
  :elapsed-days 3,
  :scheduled-days 0,
- :last-review
+ :last-repeat
  #time/instant "2023-07-18T17:46:22.976950Z"}
 ```
 
@@ -96,9 +96,9 @@ Until we move into `:review` state, the `:stability` and `:difficulty` settings 
 
 ```clojure
 (-> card
-    (core/review-card! :good  #time/instant "2023-07-15T14:42:14.706482Z" core/default-params)
-    (core/review-card! :again #time/instant "2023-07-18T14:42:14.706482Z" core/default-params)
-    (core/review-card! :good  #time/instant "2023-07-18T14:47:14.706482Z" core/default-params))
+    (core/repeat-card! :good  #time/instant "2023-07-15T14:42:14.706482Z" core/default-params)
+    (core/repeat-card! :again #time/instant "2023-07-18T14:42:14.706482Z" core/default-params)
+    (core/repeat-card! :good  #time/instant "2023-07-18T14:47:14.706482Z" core/default-params))
 ;; =>
 {:lapses 1,
  :stability 3,
@@ -108,7 +108,7 @@ Until we move into `:review` state, the `:stability` and `:difficulty` settings 
  :due #time/instant "2023-07-22T14:47:14.706482Z",
  :elapsed-days 0,
  :scheduled-days 4,
- :last-review #time/instant "2023-07-18T14:47:14.706482Z"}
+ :last-repeat #time/instant "2023-07-18T14:47:14.706482Z"}
 ```
 
 We are now in `:review` state and will start tracking the stability and difficulty of the item!
