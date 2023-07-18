@@ -1,6 +1,8 @@
 (ns open-spaced-repetition.cljc-fsrs.core-test
-  (:require [open-spaced-repetition.cljc-fsrs.core :as core]
-            [clojure.test :as t]))
+  (:require
+   [clojure.test :as t]
+   [open-spaced-repetition.cljc-fsrs.core :as core]
+   [open-spaced-repetition.cljc-fsrs.simulate :refer [simulate-repeats]]))
 
 (t/deftest new-card!
   (t/is (= (dissoc (core/new-card!) :last-repeat :due)
@@ -82,3 +84,64 @@
                   :elapsed-days 7,
                   :scheduled-days 25,
                   :last-repeat #time/instant "2023-07-28T14:47:14.706482Z"})))))
+
+(t/deftest simulate-repeats-readme-example
+  (t/is (= (let [card {:lapses 1,
+                       :stability 3,
+                       :difficulty 5.0,
+                       :reps 3,
+                       :state :review,
+                       :due #time/instant "2023-07-22T14:47:14.706482Z",
+                       :elapsed-days 0,
+                       :scheduled-days 4,
+                       :last-repeat #time/instant "2023-07-18T14:47:14.706482Z"}]
+             (simulate-repeats card [:hard :good :easy :good]))
+           [{:lapses 1,
+             :stability 3,
+             :difficulty 5.0,
+             :last-repeat #time/instant "2023-07-18T14:47:14.706482Z",
+             :reps 3,
+             :state :review,
+             :due #time/instant "2023-07-22T14:47:14.706482Z",
+             :elapsed-days 0,
+             :scheduled-days 4}
+            {:lapses 1,
+             :stability 6.185860963467298,
+             :difficulty 5.4,
+             :last-repeat #time/instant "2023-07-22T14:47:14.706482Z",
+             :reps 4,
+             :state :review,
+             :due #time/instant "2023-07-28T14:47:14.706482Z",
+             :elapsed-days 4,
+             :scheduled-days 6,
+             :rating :hard}
+            {:lapses 1,
+             :stability 14.083159793583967,
+             :difficulty 5.32,
+             :last-repeat #time/instant "2023-07-28T14:47:14.706482Z",
+             :reps 5,
+             :state :review,
+             :due #time/instant "2023-08-11T14:47:14.706482Z",
+             :elapsed-days 6,
+             :scheduled-days 14,
+             :rating :good}
+            {:lapses 1,
+             :stability 45.743757632503126,
+             :difficulty 4.856,
+             :last-repeat #time/instant "2023-08-11T14:47:14.706482Z",
+             :reps 6,
+             :state :review,
+             :due #time/instant "2023-09-26T14:47:14.706482Z",
+             :elapsed-days 14,
+             :scheduled-days 46,
+             :rating :easy}
+            {:lapses 1,
+             :stability 90.16370184543588,
+             :difficulty 4.8848,
+             :last-repeat #time/instant "2023-09-26T14:47:14.706482Z",
+             :reps 7,
+             :state :review,
+             :due #time/instant "2023-12-25T14:47:14.706482Z",
+             :elapsed-days 46,
+             :scheduled-days 90,
+             :rating :good}])))
