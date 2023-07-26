@@ -8,12 +8,12 @@
 (def ->rating "Mapping from rating keyword to it's index in the `weights`"
   ;; NOTE: This is strictly an implementation detail, use it only as such
   {
-   :again 0 ;; We got the answer wrong. Automatically means that we
+   :again 1 ;; We got the answer wrong. Automatically means that we
             ;; have forgotten the card. This is a lapse in memory.
-   :hard  1 ;; The answer was only partially correct and/or we took
+   :hard  2 ;; The answer was only partially correct and/or we took
             ;; too long to recall it.
-   :good  2 ;; The answer was correct but we were not confident about it.
-   :easy  3 ;; The answer was correct and we were confident and quick
+   :good  3 ;; The answer was correct but we were not confident about it.
+   :easy  4 ;; The answer was correct and we were confident and quick
             ;; in our recall.
    })
 
@@ -42,23 +42,23 @@
 
 (def default-params "The default parameters we use with FSRS."
   {
-   :weights [1,   ;; Weight for :again rating
-             2,   ;; Weight for :hard rating
-             3,   ;; Weight for :good rating
-             4,   ;; Weight for :easy rating
-             5,
-             0.5,
-             0.5,
-             0.2,
-             1.4,
-             0.2,
-             0.8,
-             2,
-             0.2,
-             0.2,
-             1,
-             0.5, ;; Hard Penalty
-             2    ;; Easy Bonus
+   :weights [0.4,   ;; Weight for :again rating
+             0.6,   ;; Weight for :hard rating
+             2.4,   ;; Weight for :good rating
+             5.8,   ;; Weight for :easy rating
+             4.93,
+             0.94,
+             0.86,
+             0.01,
+             1.49,
+             0.14,
+             0.94,
+             2.18,
+             0.05,
+             0.34,
+             1.26,
+             0.29, ;; Hard Penalty
+             2.61  ;; Easy Bonus
              ]
    :request-retention 0.9 ;; Retention is the percentage of your
                           ;; successful recall. `request-retention` is

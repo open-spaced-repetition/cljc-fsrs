@@ -143,7 +143,7 @@
       (-> schedule
           (assoc-in [:again :due] (t/>> now (t/new-duration 1 :minutes)))
           (assoc-in [:hard  :due] (t/>> now (t/new-duration 5 :minutes)))
-          (assoc-in [:good  :due] (t/>> now (t/new-period good-interval :days)))
+          (assoc-in [:good  :due] (t/>> now (t/new-duration 10 :minutes)))
           (assoc-in [:easy  :due] (t/>> now (t/new-period easy-interval :days)))
           (assoc-in [:again :scheduled-days] 0) ; Since due is in minutes
           (assoc-in [:hard  :scheduled-days] 0) ; Since due is in minutes
