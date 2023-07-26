@@ -85,14 +85,14 @@
   (assert-weights weights)
   (assert-rating rating)
   (- (nth weights 4)
-     (* (- (nth weights (->rating rating)) 3)
-        (nth weights 5))))
+     (* (nth weights 5)
+        (- (->rating rating) 3))))
 
 (defn init-stability "Give the initial value of stability for given `rating`"
   [weights rating]
   (assert-weights weights)
   (assert-rating rating)
-  (max 0.1 (nth weights (->rating rating))))
+  (max 0.1 (nth weights (- (->rating rating) 1))))
 
 (defn calculate-retrievability "Calculate decay in recall over time"
   [elapsed-days stability]
@@ -112,7 +112,7 @@
   [difficulty rating weights]
   (let [new-diff (- difficulty
                     (* (nth weights 6)
-                       (- (nth weights (->rating rating)) 3)))]
+                       (- (->rating rating) 3)))]
     (constrain-difficulty (mean-reversion new-diff weights))))
 
 (defn next-stability "Given current D, S, R and rating, find the new stability"
