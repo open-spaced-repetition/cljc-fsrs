@@ -126,20 +126,11 @@
   the `card` by transitioning it through our state machine for every
   possible rating."
   [schedule card now params]
-  (let [good-interval (parameters/next-interval
-                       params
-                       (get-in schedule [:good :stability]))
-        hard-interval (min (parameters/next-interval
-                            params
-                            (get-in schedule [:hard :stability]))
-                           good-interval)
-        good-interval (max good-interval (inc hard-interval))
-        easy-interval (max (inc good-interval)
-                           (parameters/next-interval
-                            params
-                            (get-in schedule [:easy :stability])))]
-    (case (:state card)
-      :new
+  (case (:state card)
+    :new
+    (let [easy-interval (parameters/next-interval
+                         params
+                         (get-in schedule [:easy :stability]))]
       (-> schedule
           (assoc-in [:again :due] (t/>> now (t/new-duration 1 :minutes)))
           (assoc-in [:hard  :due] (t/>> now (t/new-duration 5 :minutes)))
@@ -147,10 +138,17 @@
           (assoc-in [:easy  :due] (t/>> now (t/new-period easy-interval :days)))
           (assoc-in [:again :scheduled-days] 0) ; Since due is in minutes
           (assoc-in [:hard  :scheduled-days] 0) ; Since due is in minutes
-          (assoc-in [:good  :scheduled-days] good-interval)
-          (assoc-in [:easy  :scheduled-days] easy-interval))
+          (assoc-in [:good  :scheduled-days] 0) ; Since due is in minutes
+          (assoc-in [:easy  :scheduled-days] easy-interval)))
 
-      (:learning :relearning)
+    (:learning :relearning)
+    (let [good-interval (parameters/next-interval
+                         params
+                         (get-in schedule [:good :stability]))
+          easy-interval (max (inc good-interval)
+                             (parameters/next-interval
+                              params
+                              (get-in schedule [:easy :stability])))]
       (-> schedule
           (assoc-in [:again :due] (t/>> now (t/new-duration 5  :minutes)))
           (assoc-in [:hard  :due] (t/>> now (t/new-duration 10 :minutes)))
@@ -159,9 +157,21 @@
           (assoc-in [:again :scheduled-days] 0) ; Since due is in minutes
           (assoc-in [:hard  :scheduled-days] 0) ; Since due is in minutes
           (assoc-in [:good  :scheduled-days] good-interval)
-          (assoc-in [:easy  :scheduled-days] easy-interval))
+          (assoc-in [:easy  :scheduled-days] easy-interval)))
 
-      :review
+    :review
+    (let [hard-interval (parameters/next-interval
+                         params
+                         (get-in schedule [:hard :stability]))
+          good-interval (parameters/next-interval
+                         params
+                         (get-in schedule [:good :stability]))
+          hard-interval (min hard-interval good-interval)
+          good-interval (max good-interval (inc hard-interval))
+          easy-interval (max (parameters/next-interval
+                              params
+                              (get-in schedule [:easy :stability]))
+                             (inc good-interval))]
       (-> schedule
           (assoc-in [:again :due] (t/>> now (t/new-duration 5 :minutes)))
           (assoc-in [:hard  :due] (t/>> now (t/new-period hard-interval :days)))
