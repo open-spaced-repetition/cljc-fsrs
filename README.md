@@ -27,6 +27,7 @@ io.github.vedang/cljc-fsrs {:git/sha "<PUT-LATEST-SHA-HERE>"}
 ```
 
 ## 🚀 Usage
+**NOTE**: When you try this on the REPL, you might see different values for `stability`, `difficulty`, `scheduled-days` than shown below. This is fine! The weights used are being updated by the `open-spaced-repetition` team and it's difficult to keep the README in sync.
 
 ```clojure
 (require '[open-spaced-repetition.cljc-fsrs.core :as core]
