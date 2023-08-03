@@ -1,6 +1,7 @@
 (ns open-spaced-repetition.cljc-fsrs.core-test
   (:require
    [clojure.test :as t]
+   [open-spaced-repetition.cljc-fsrs.card :as card]
    [open-spaced-repetition.cljc-fsrs.core :as core]
    [open-spaced-repetition.cljc-fsrs.simulate :refer [simulate-repeats]]))
 
@@ -145,3 +146,41 @@
                        :scheduled-days 4,
                        :last-repeat #time/instant "2023-07-18T14:47:14.706482Z"}]
              (simulate-repeats card [:hard :good :easy :good])))))
+
+(t/deftest simulate-repeats-py-fsrs
+  (t/is (= [0 5 16 43 106 236 0 0 12 25 47 85 147]
+           (let [params {
+                         :weights [1.14,
+                                   1.01,
+                                   5.44,
+                                   14.67,
+                                   5.3024,
+                                   1.5662,
+                                   1.2503,
+                                   0.0028,
+                                   1.5489,
+                                   0.1763,
+                                   0.9953,
+                                   2.7473,
+                                   0.0179,
+                                   0.3105,
+                                   0.3976,
+                                   0,     ;; Hard Penalty
+                                   2.0902 ;; Easy Bonus
+                                   ]
+                         :request-retention 0.9 ;; Retention is the percentage of your
+                         ;; successful recall. `request-retention` is
+                         ;; a number between 0 and 1 which defines
+                         ;; the retention percentage we are
+                         ;; targeting.
+                         :maximum-interval  36500 ;; The maximum interval of time before
+                         }
+                 card (card/new-card! #time/instant "2022-11-29T12:30:00.000000Z")
+                 ratings [:good :good :good :good :good :good :again :again :good :good :good :good :good]
+                 history (simulate-repeats card ratings params)]
+             ;; Simulate Repeats starts with the initial card, which
+             ;; we do not want. So we drop it.
+             (mapv :scheduled-days (rest history))))
+        "Add test to match the one maintained by @L-M-Sherlock.
+
+See: https://github.com/open-spaced-repetition/py-fsrs/blob/99ef45f6827864e0806dbf654ce1048913611ab3/tests/test_fsrs.py"))

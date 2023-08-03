@@ -7,13 +7,12 @@
   "Given a `card`, and a vector of `ratings`, simulate the spaced
   repetition of the card as if it went through those ratings on the due
   dates provided by the algorithm."
-  [card ratings]
-  (second
-   (reduce (fn [[card history] rating]
-             (let [card (core/repeat-card! card
-                                           rating
-                                           (:due card)
-                                           core/default-params)]
-               [card (conj history (log/record-log! card rating true))]))
-           [card [card]]
-           ratings)))
+  ([card ratings]
+   (simulate-repeats card ratings core/default-params))
+  ([card ratings params]
+   (second
+    (reduce (fn [[card history] rating]
+              (let [card (core/repeat-card! card rating (:due card) params)]
+                [card (conj history (log/record-log! card rating true))]))
+            [card [card]]
+            ratings))))
