@@ -34,10 +34,6 @@
     })
 
 ;;; # Default weights when no external weight is provided
-(defn calculate-interval-modifier
-  [request-retention]
-  (* 9 (- (/ 1 request-retention) 1)))
-
 (def default-params "The default parameters we use with FSRS."
   {
    :weights [0.4,
@@ -65,7 +61,6 @@
                           ;; targeting.
    :maximum-interval  36500 ;; The maximum interval of time before
                             ;; repeating the card, in days
-   :interval-modifier (calculate-interval-modifier 0.9)
    })
 
 ;;; # Formulae and Calculations for predicting new parameters for a card
@@ -141,7 +136,6 @@
       (* stability (+ 1 (* recall-factor (nth weights 16)))))))
 
 (defn next-interval "Given the `stability` of item, when should we revisit it?"
-  [{:keys [maximum-interval interval-modifier]} stability]
-  (let [new-interval (* stability interval-modifier)]
-    ;; @TODO: Apply Fuzzying to the `new-interval`
-    (min maximum-interval (max 1 (Math/round new-interval)))))
+  [{:keys [maximum-interval request-retention]} stability]
+  (let [new-interval (* stability 9 (- (/ 1 request-retention) 1))]
+    (max (min (Math/round new-interval) maximum-interval) 1)))

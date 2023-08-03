@@ -180,11 +180,15 @@ We are now in `:review` state and will start tracking the stability and difficul
 ## ⚙️ Contributing (This Section TBD)
 ### 🛠 Code Development
 
-Run the project's tests:
+Start a REPL against `cljc-fsrs`
+
+    $ clojure -M:cider:dev:test
+
+Run `cljc-fsrs` tests:
 
     $ clojure -T:build test
 
-Run the project's CI pipeline and build a JAR:
+Run `cljc-fsrs` CI pipeline and build a JAR:
 
     $ clojure -T:build ci
 
