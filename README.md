@@ -15,15 +15,9 @@ A Clojure(script) implementation of [Free Spaced Repetition Scheduler algorithm]
 
 At the moment, the project is not available on Clojars / Maven, and can only be installed as a Git Dependency. I will add instructions for installing from Maven once I upload the artifact.
 
-This project is a straightforward re-implementation of the algorithm, inspired from the following two code-bases:
-- https://github.com/open-spaced-repetition/fsrs4anki/blob/884741bc9f804ff428540184e0c971875f128fd1/fsrs4anki_scheduler.js
-- https://github.com/open-spaced-repetition/go-fsrs/blob/70232f222d0c0ef7523ffa7ceb3de91feddf6030/fsrs.go
-
-There is a lot of scope to make this more Clojure-y, which I will do as and when time permits.
-
 ### Deps.edn
 ```edn
-io.github.vedang/cljc-fsrs {:git/sha "<PUT-LATEST-SHA-HERE>"}
+io.github.open-spaced-repetition/cljc-fsrs {:git/sha "<PUT-LATEST-SHA-HERE>"}
 ```
 
 ## 🚀 Usage
