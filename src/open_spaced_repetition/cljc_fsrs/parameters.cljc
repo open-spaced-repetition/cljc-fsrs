@@ -1,4 +1,5 @@
-(ns open-spaced-repetition.cljc-fsrs.parameters)
+(ns open-spaced-repetition.cljc-fsrs.parameters
+  #:nextjournal.clerk{:visibility {:code :show, :result :show}, :toc true})
 
 ;;; # Card Ratings and States
 ;; There are four possible ratings that we assign to a card on every
