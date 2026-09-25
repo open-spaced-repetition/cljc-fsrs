@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "devDependencies": {
+    "@js-joda/core": "^5.6.5"
+  }
+}

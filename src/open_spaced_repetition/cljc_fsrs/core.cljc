@@ -1,5 +1,4 @@
 (ns open-spaced-repetition.cljc-fsrs.core
-  #:nextjournal.clerk{:visibility {:code :show, :result :show}, :toc true}
   (:require
    [open-spaced-repetition.cljc-fsrs.card :as card]
    [open-spaced-repetition.cljc-fsrs.parameters :as parameters]
@@ -29,12 +28,15 @@
   ([card rating]
    (repeat-card! card rating default-params))
   ([card rating params]
-   (parameters/assert-rating rating)
-   (parameters/assert-weights (:weights params))
    (repeat-card! card rating (t/now) params))
   ;; This arity should be considered private. It's helpful to be able
   ;; to control time during tests.
   ([card rating repeat-time-instant params]
+   (parameters/validate-rating! rating)
+   (parameters/validate-params! params)
+   (when-not (= 6 (:fsrs-version card))
+     (throw (ex-info "Card has no FSRS-6 version; replay its review history or recreate it"
+                     {:fsrs-version (:fsrs-version card)})))
    (-> card
        (card/repeat-card! repeat-time-instant params)
        rating)))

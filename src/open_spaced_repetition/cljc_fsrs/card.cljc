@@ -1,5 +1,4 @@
 (ns open-spaced-repetition.cljc-fsrs.card
-  #:nextjournal.clerk{:visibility {:code :show, :result :show}, :toc true}
   (:require
    [open-spaced-repetition.cljc-fsrs.scheduler :as scheduler]
    [tick.core :as t]))
@@ -38,6 +37,8 @@
 (defn new-card! "Return a brand new empty card, with empty values"
   [creation-time-instant]
   {:due creation-time-instant
+   :fsrs-version 6
+   :step 0
    :stability 0
    :difficulty 0
    :elapsed-days 0

@@ -9,6 +9,9 @@
    :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
                 io.github.cognitect-labs/test-runner
                 {:git/tag "v0.5.1" :git/sha "dfb30dd"}}}
+  :cljs-test
+  {:extra-paths ["test"]
+   :extra-deps {org.clojure/clojurescript {:mvn/version "1.12.134"}}}
   :build
   {:extra-deps {io.github.clojure/tools.build
                 {:git/tag "v0.9.4" :git/sha "76b78fe"}
